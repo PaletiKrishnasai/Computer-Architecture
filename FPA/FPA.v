@@ -25,11 +25,48 @@ module CheckSwap(input [31:0]in1, input [31:0]in2, output reg [31:0]out1, output
 
 endmodule
 
-module BarrelShift(input [31:0]A, input [7:0]shift, output [31:0]B);
+module Shift(input [31:0]A, input [7:0]shift, output [31:0]B);
     assign B = A>>shift;
 endmodule
 
+module RightShift (input [31:0]A, input [7:0]shift, output [31:0]B);
+    genvar i;
+    generate
+    for (i = 0; i < 8'b11111111 ; i = i + 1) 
+    begin
 
+        wire [31:0]tmp;
+        
+        if(i <= 5'b11111)
+            assign tmp = A[31:i];
+        else 
+            assign tmp = 32'b0;
+
+        assign enable = ~|(shift ^ i);
+
+        assign B[31:0] = enable ? tmp[31:0] : 32'bz;
+
+    end
+    endgenerate
+endmodule
+
+module BarrelShift (input [31:0]A, input [4:0]shift, output [31:0]B);
+    genvar i;
+    generate
+    for (i = 0; i < 5'b11111 ; i = i + 1) 
+    begin 
+
+        wire [31:0]tmp;
+        
+        assign tmp = {A[i:0],A[31:i]};
+
+        assign enable = ~|(shift ^ i);
+
+        assign B[31:0] = enable ? tmp[31:0] : 32'bz;
+
+    end
+    endgenerate
+endmodule
 
 module top;
 
@@ -52,7 +89,7 @@ module top;
     assign N1 = {|E1,M1};   //Reduction OR handles zeroes
     assign N2 = {|E2,M2};   //and denormal numbers ... we just do the manual normalization.
 
-    BarrelShift BS(N2,E_Difference,N3);  // makes sure exponents are of the same value.
+    RightShift RS(N2,E_Difference,N3);  // makes sure exponents are of the same value.
 
     wire [31:0]N4;
     assign N4 = {32{S1^S2}}^N3; // 1's complement of second number
@@ -108,7 +145,10 @@ module top;
         #0 I1={1'b0,{8{1'b1}},23'b0}; I2={1'b0,{7{1'b1}},24'b111011}; // inf + normal
         #10 I1={31'b0,1'b1}; I2=32'b00111111110010100011110101110001; // denormal + normal 
         #20 I1=32'b01000110000111000100000000000000;I2=32'b11000101111110100000000000000000; // normal + normal
+
         #30 I1=32'b11000101111110100000000000000000;I2=32'b01000101111110100000000000000000; // neg + pos = 0 // -0 or +0 depends on I1
+        #40 I1=32'b11000000000100000000000000000000;I2=32'b01000000000100000000000000000000;
+        #50 I1=32'b01000000000100000000000000000000;I2=32'b00111111101000000000000000000000;
     end
     initial
     begin
