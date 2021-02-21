@@ -1,0 +1,6 @@
+                   0 a=4294967295 b=       100	product=                   x	
+                  10 a=       123 b=        89	product=                   x	
+                  20 a=       124 b=        10	product=                   x	
+                 125 a=       124 b=        10	product=        429496729500	
+                 135 a=       124 b=        10	product=               10947	
+                 145 a=       124 b=        10	product=                1240	
